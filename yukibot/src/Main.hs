@@ -28,6 +28,7 @@ import qualified Yukibot.Plugins.Channels        as CH
 import qualified Yukibot.Plugins.Initialise      as I
 import qualified Yukibot.Plugins.LinkInfo        as L
 import qualified Yukibot.Plugins.Memory          as M
+import qualified Yukibot.Plugins.Mueval          as Mu
 import qualified Yukibot.Plugins.Seen            as S
 import qualified Yukibot.Plugins.Trigger         as T
 
@@ -66,6 +67,7 @@ runWithState fp ys = do
   let bs  = _blacklistState  ys
   let ls  = _linkinfoState   ys
   let wfs = M.simpleFactStore (defaultMongo' keyval "watching") "watching"
+  let mus = _muevalState ys
 
   -- Register signal handlers
   installHandler sigINT  (Catch $ handler state) Nothing
@@ -89,6 +91,7 @@ runWithState fp ys = do
   registerCommand cs $ BL.wrapsCmd bs "seen"        S.command
   registerCommand cs $ BL.wrapsCmd bs "cellular"    CA.command
   registerCommand cs $ BL.wrapsCmd bs "brainfuck"   BF.command
+  registerCommand cs $ BL.wrapsCmd bs "eval"     $  Mu.command          mus
 
   -- Register event handlers
   addGlobalEventHandler' state $ C.eventRunner cs
@@ -96,6 +99,7 @@ runWithState fp ys = do
   addGlobalEventHandler' state $ BL.wraps bs "seen"       S.eventHandler
   addGlobalEventHandler' state $ BL.wraps bs "linkinfo" $ L.eventHandler ls
   addGlobalEventHandler' state $ BL.wraps bs "triggers"   T.eventHandler
+  addGlobalEventHandler' state $ BL.wraps bs "eval"     $ Mu.eventHandler mus
 
   -- Connect to networks
   let is = _initialState ys

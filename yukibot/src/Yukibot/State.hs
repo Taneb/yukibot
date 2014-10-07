@@ -21,6 +21,7 @@ import qualified Network.IRC.Asakura.Permissions as P
 import qualified Network.IRC.Asakura.Blacklist   as BL
 import qualified Yukibot.Plugins.Initialise      as I
 import qualified Yukibot.Plugins.LinkInfo        as L
+import qualified Yukibot.Plugins.Mueval          as Mu
 
 -- *Live State
 
@@ -32,6 +33,7 @@ data YukibotState = YS
     , _blacklistState  :: BL.BlacklistState
     , _initialState    :: I.InitialCfg
     , _roKeyStore      :: Map Text Text
+    , _muevalState     :: Mu.MuevalCfg
     }
 
 -- *Snapshotting
@@ -44,10 +46,11 @@ data YukibotStateSnapshot = YSS
     , _blacklistSnapshot  :: BL.BlacklistStateSnapshot
     , _initialSnapshot    :: I.InitialCfg
     , _roKeyStoreSnapshot :: Map Text Text
+    , _muevalSnapshot     :: Mu.MuevalCfg
     }
 
 instance Default YukibotStateSnapshot where
-    def = YSS def def def def def def
+    def = YSS def def def def def def def
 
 instance Snapshot YukibotState YukibotStateSnapshot where
     snapshotSTM ys = do
@@ -61,6 +64,7 @@ instance Snapshot YukibotState YukibotStateSnapshot where
                  , _blacklistSnapshot  = bss
                  , _initialSnapshot    = _initialState ys
                  , _roKeyStoreSnapshot = _roKeyStore ys
+                 , _muevalSnapshot     = _muevalState ys
                  }
 
 instance Rollback YukibotStateSnapshot YukibotState where
@@ -75,6 +79,7 @@ instance Rollback YukibotStateSnapshot YukibotState where
                 , _blacklistState  = bs
                 , _initialState    = _initialSnapshot yss
                 , _roKeyStore      = _roKeyStoreSnapshot yss
+                , _muevalState     = _muevalSnapshot yss
                 }
 
 instance ToJSON YukibotStateSnapshot where
@@ -84,6 +89,7 @@ instance ToJSON YukibotStateSnapshot where
                         , "blacklist"   .= _blacklistSnapshot  yss
                         , "initial"     .= _initialSnapshot    yss
                         , "global"      .= _roKeyStoreSnapshot yss
+                        , "mueval"      .= toJSON (_muevalSnapshot     yss)
                         ]
 
 instance FromJSON YukibotStateSnapshot where
@@ -93,6 +99,7 @@ instance FromJSON YukibotStateSnapshot where
                                <*> v .:? "blacklist"   .!= def
                                <*> v .:? "initial"     .!= def
                                <*> v .:? "global"      .!= def
+                               <*> v .:? "mueval"      .!= def
     parseJSON _ = fail "Expected object"
 
 -- *Initialisation
