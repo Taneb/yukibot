@@ -75,7 +75,7 @@ eventHandler mc = AsakuraEventHandler
   where
     go _ ev = return $
       case _message ev of
-        Privmsg _ (Right msg) | ">" `isPrefixOf` msg -> do
+        Privmsg _ (Right msg) | "> " `isPrefixOf` msg -> do
           let expr = T.strip . T.drop 1 $ msg
           res <- mueval mc expr
           replyOrPaste ev res
