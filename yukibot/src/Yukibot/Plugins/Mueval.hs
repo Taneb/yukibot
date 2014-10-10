@@ -15,6 +15,7 @@ import Data.Aeson                   (FromJSON(..), ToJSON(..), Value(..), (.=), 
 import Data.ByteString.Lazy         (toStrict)
 import Data.Char                    (isSpace)
 import Data.Default.Class           (Default(..))
+import Data.Monoid                  ((<>))
 import Data.Text                    (Text, isPrefixOf, unpack, pack)
 import Data.Text.Encoding           (decodeUtf8)
 import Network.IRC.Asakura.Commands (CommandDef(..))
@@ -24,6 +25,7 @@ import Network.IRC.Client           (reply)
 import Network.IRC.Client.Types     (Event(..), EventType(EPrivmsg), Message(Privmsg), UnicodeEvent, IRC)
 import Network.Wreq                 (FormParam((:=)), post, responseBody)
 import System.Process               (readProcessWithExitCode)
+import System.Random                (randomIO)
 
 import qualified Data.Text as T
 
@@ -86,9 +88,13 @@ eventHandler mc = AsakuraEventHandler
 -- |Evaluate an expression and return the result.
 mueval :: MonadIO m => MuevalCfg -> Text -> m String
 mueval mc expr = do
+  -- Generate a random seed
+  seed <- liftIO (randomIO :: IO Int)
+  let expr' = "let seed = " <> pack (show seed) <> " in " <> expr
+
   let loadfile = _loadfile mc
   let binary   = _mueval mc
-  let opts     = muopts loadfile expr
+  let opts     = muopts loadfile expr'
 
   (_, out, err) <- liftIO $ readProcessWithExitCode binary opts ""
   return . strip $
