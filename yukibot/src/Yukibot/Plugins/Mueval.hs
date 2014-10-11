@@ -15,8 +15,7 @@ import Data.Aeson                   (FromJSON(..), ToJSON(..), Value(..), (.=), 
 import Data.ByteString.Lazy         (toStrict)
 import Data.Char                    (isSpace)
 import Data.Default.Class           (Default(..))
-import Data.Monoid                  ((<>))
-import Data.Text                    (Text, isPrefixOf, unpack, pack)
+import Data.Text                    (isPrefixOf, unpack, pack)
 import Data.Text.Encoding           (decodeUtf8)
 import Network.IRC.Asakura.Commands (CommandDef(..))
 import Network.IRC.Asakura.Events   (runAlways, runEverywhere)
@@ -62,7 +61,7 @@ command mc = CommandDef
              }
   where
     go args _ ev = do
-      res <- mueval mc $ T.intercalate " " args
+      res <- mueval mc . unpack $ T.intercalate " " args
       return $ replyOrPaste ev res
 
 -- |Evaluate expressions in PRIVMSGs starting with a '>'
@@ -79,18 +78,18 @@ eventHandler mc = AsakuraEventHandler
       case _message ev of
         Privmsg _ (Right msg) | "> " `isPrefixOf` msg -> do
           let expr = T.strip . T.drop 1 $ msg
-          res <- mueval mc expr
+          res <- mueval mc $ unpack expr
           replyOrPaste ev res
         _ -> return ()
 
 -- *Evaluation
 
 -- |Evaluate an expression and return the result.
-mueval :: MonadIO m => MuevalCfg -> Text -> m String
+mueval :: MonadIO m => MuevalCfg -> String -> m String
 mueval mc expr = do
   -- Generate a random seed
   seed <- liftIO (randomIO :: IO Int)
-  let expr' = "let seed = " <> pack (show seed) <> " in " <> expr
+  let expr' = "let seed = " ++ show seed ++ " in " ++ expr
 
   let loadfile = _loadfile mc
   let binary   = _mueval mc
@@ -110,11 +109,11 @@ mueval mc expr = do
             | otherwise       -> o
 
 -- |Default options for mueval
-muopts :: String -> Text -> [String]
+muopts :: String -> String -> [String]
 muopts loadfile expr =
   [ "--no-imports"
   , "-l", loadfile
-  , "--expression=" ++ unpack expr
+  , "--expression=" ++ expr
   , "+RTS", "-N", "-RTS"
   ]
 
